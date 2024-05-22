@@ -18,3 +18,10 @@ From the root directory, execute the following Docker commands to first build, a
 docker build -t ppsmpl-hybrik -f hybrik.dockerfile .
 docker run --gpus all -v $(pwd)/hybrik/pretrained_models:/app/pretrained_models -v $(pwd)/hybrik/model_files:/app/model_files -v $(pwd)/hybrik/output:/app/output -it ppsmpl-hybrik --video-name <path-to-video-file>.mp4 --out-dir output --save-pk --save-img
 ```
+
+### Human Masking
+We use Detectron2 for masking humans in videos. From the root directory, execute the following Docker commands to first build, and then launch the container.
+```shell
+docker build -t ppsmpl-hm -f hm.dockerfile .
+docker run --gpus all -it ppsmpl-hm -i <input-video-path>.mp4 -o <output-video-path>.mp4
+```
