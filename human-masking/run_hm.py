@@ -59,8 +59,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Remove humans from a video using Detectron2."
     )
-    parser.add_argument("--input_path", "-i", type=str, required=True, help="Path to the input video file")
-    parser.add_argument("--output_path", "-o", type=str, required=True, help="Path to the output video file")
+    parser.add_argument(
+        "--input_path",
+        "-i",
+        type=str,
+        required=True,
+        help="Path to the input video file",
+    )
+    parser.add_argument(
+        "--output_path",
+        "-o",
+        type=str,
+        required=True,
+        help="Path to the output video file",
+    )
     args = parser.parse_args()
 
     predictor = setup_predictor()

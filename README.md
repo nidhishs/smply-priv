@@ -25,3 +25,7 @@ We use Detectron2 for masking humans in videos. From the root directory, execute
 docker build -t ppsmpl-hm -f hm.dockerfile .
 docker run --gpus all -it ppsmpl-hm -i <input-video-path>.mp4 -o <output-video-path>.mp4
 ```
+
+```
+python test.py --model e2fgvi_hq --video examples/schoolgirls.mp4 --mask examples/schoolgirls_mask  --ckpt ckpt/E2FGVI-HQ-CVPR22.pth
+```

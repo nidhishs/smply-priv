@@ -1,4 +1,5 @@
 hybrik/pretrained_models
 hybrik/model_files
 hybrik/output
+human-masking/ckpt
 **/*.mp4
