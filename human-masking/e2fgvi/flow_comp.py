@@ -1,9 +1,7 @@
 import numpy as np
-
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
-
 from mmcv.cnn import ConvModule
 from mmengine.runner import load_checkpoint
 

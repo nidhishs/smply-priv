@@ -1,2 +1,5 @@
 opencv-python-headless==4.9.0.80
 detectron2 @ git+https://github.com/facebookresearch/detectron2.git@79f9147
+# mmcv and mmengine are installed separately in order to avoid conflict with opencv-python-headless
+# mmcv==2.2.0
+# mmengine==0.10.4

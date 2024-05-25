@@ -19,13 +19,16 @@ docker build -t ppsmpl-hybrik -f hybrik.dockerfile .
 docker run --gpus all -v $(pwd)/hybrik/pretrained_models:/app/pretrained_models -v $(pwd)/hybrik/model_files:/app/model_files -v $(pwd)/hybrik/output:/app/output -it ppsmpl-hybrik --video-name <path-to-video-file>.mp4 --out-dir output --save-pk --save-img
 ```
 
-### Human Masking
-We use Detectron2 for masking humans in videos. From the root directory, execute the following Docker commands to first build, and then launch the container.
+### Human Masking & In-painting
+We use Detectron2 for masking humans in videos and support E^2FGVI as well as OpenCV's Navier-Stokes for in-painting. Ensure the E^2FGVI model-files are available `human-masking/ckpt/*.pth`.
+```shell
+pip install gdown
+
+mkdir -p human-masking/ckpt
+gdown https://drive.google.com/uc?id=10wGdKSUOie0XmCr8SQ2A2FeDe-mfn5w3 -O human-masking/ckpt/E2FGVI-HQ-CVPR22.pth
+```
+From the root directory, execute the following Docker commands to first build, and then launch the container.
 ```shell
 docker build -t ppsmpl-hm -f hm.dockerfile .
-docker run --gpus all -it ppsmpl-hm -i <input-video-path>.mp4 -o <output-video-path>.mp4
-```
-
-```
-python test.py --model e2fgvi_hq --video examples/schoolgirls.mp4 --mask examples/schoolgirls_mask  --ckpt ckpt/E2FGVI-HQ-CVPR22.pth
+docker run --gpus all -v $(pwd)/human-masking/ckpt:/app/ckpt -it ppsmpl-hm -i <input-video-path>.mp4 -p e2fgvi
 ```

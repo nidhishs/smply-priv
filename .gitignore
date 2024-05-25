@@ -3,3 +3,5 @@ hybrik/model_files
 hybrik/output
 human-masking/ckpt
 **/*.mp4
+
+**/__pycache__
