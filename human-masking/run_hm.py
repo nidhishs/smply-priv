@@ -3,12 +3,17 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+import glob
 import logging
+import time
+
 import cv2
 import numpy as np
+import torch
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
+from e2fgvi import run_e2fgvi, setup_e2fgvi
 from tqdm import tqdm
 
 MASKING_MODEL = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
@@ -51,8 +56,7 @@ def save_frames(frames, output_path, fps=30):
     out.release()
 
 
-def get_human_masks(frames, config_path, progress=False):
-    predictor = setup_model(config_path)
+def get_masks(predictor, frames, progress=False):
     masks = []
     for frame in tqdm(frames) if progress else frames:
         instances = predictor(frame)["instances"]
@@ -72,43 +76,76 @@ def get_human_masks(frames, config_path, progress=False):
 
 
 def main(args):
-    logger.info("Reading frames from: %s, resizing: %s", args.input_path, args.resize)
-    frames = read_frames(args.input_path, args.resize)
-    
-    logger.info("Getting human masks using model: %s", MASKING_MODEL)
-    masks = get_human_masks(frames, MASKING_MODEL, progress=True)
-    
-    mask_path = args.input_path.replace(".mp4", "_masks.mp4")
-    save_frames(masks, mask_path)
-    logger.info("Saved masks video to: %s", mask_path)
-    
-    if not args.inpaint:
-        return
+    video_paths = glob.glob(os.path.join(args.input_dir, "**/*.mp4"), recursive=True)
+    logger.info("Reading videos from: %s. Found %d videos.", args.input_dir, len(video_paths))
 
+    masking_model = setup_model(MASKING_MODEL)
+    logger.info("Using masking-model: %s", MASKING_MODEL)
+    
     if args.inpaint == "e2fgvi":
-        from e2fgvi import run_e2fgvi
         logger.info("Inpainting using E2FGVI model: %s", E2FGVI_MODEL)
-        inpainted_frames = run_e2fgvi(
-            frames, masks, ckpt_path=E2FGVI_MODEL, progress=True
-        )
+        inpaint_model = setup_e2fgvi(E2FGVI_MODEL, "cuda" if torch.cuda.is_available() else "cpu")
     elif args.inpaint == "ns":
         logger.info("Inpainting using OpenCV's Navier-Stokes method")
-        inpainted_frames = []
-        for frame, mask in zip(frames, masks):
-            inpainted_frame = cv2.inpaint(frame, mask, 3, cv2.INPAINT_NS)
-            inpainted_frames.append(inpainted_frame)
-    else:
-        raise ValueError("Invalid inpainting method")
-    
-    inpaint_path = args.input_path.replace(".mp4", f"_{args.inpaint}.mp4")
-    save_frames(inpainted_frames, inpaint_path)
-    logger.info("Saved inpainted video to: %s", inpaint_path)
+        inpaint_model = None
+
+    tic = time.time()
+    for i, video_path in enumerate(video_paths):
+        logger.info("Processing video (%d/%d): %s", i + 1, len(video_paths), video_path)
+
+        frames = read_frames(video_path, args.resize)
+        if args.resize:
+            resized_path = os.path.join(
+                args.output_dir, 'resized', os.path.relpath(video_path, args.input_dir)
+            )
+            os.makedirs(os.path.dirname(resized_path), exist_ok=True)
+            save_frames(frames, resized_path)
+            logger.info("Saved resized video to: %s", resized_path)
+
+        logger.info("Getting human masks...")
+        masks = get_masks(masking_model, frames, progress=True)
+        mask_path = os.path.join(
+            args.output_dir, 'masks',
+            os.path.relpath(video_path, args.input_dir).replace(".mp4", "_masks.mp4")
+        )
+        os.makedirs(os.path.dirname(mask_path), exist_ok=True)
+        save_frames(masks, mask_path)
+        logger.info("Saved masks video to: %s", mask_path)
+
+        if not args.inpaint:
+            continue
+        
+        logger.info("Inpainting...")
+        if args.inpaint == "e2fgvi":
+            assert inpaint_model is not None, "E2FGVI model not loaded"
+            inpainted_frames = run_e2fgvi(
+                inpaint_model, frames, masks, progress=True
+            )
+        elif args.inpaint == "ns":
+            inpainted_frames = []
+            for frame, mask in zip(frames, masks):
+                inpainted_frame = cv2.inpaint(frame, mask, 3, cv2.INPAINT_NS)
+                inpainted_frames.append(inpainted_frame)
+
+        assert inpainted_frames, "No inpainted frames found"
+        inpaint_path = os.path.join(
+            args.output_dir, 'inpainted',
+            os.path.relpath(video_path, args.input_dir).replace(".mp4", f"_{args.inpaint}.mp4")
+        )
+        os.makedirs(os.path.dirname(inpaint_path), exist_ok=True)
+        save_frames(inpainted_frames, inpaint_path)
+        logger.info("Saved inpainted video to: %s", inpaint_path)
+    toc = time.time()
+
+    h, m, s = int(toc - tic) // 3600, int(toc - tic) // 60, int(toc - tic) % 60
+    logger.info("Finished processing %d videos in %dh %dm %ds", len(video_paths), h, m, s)
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Mask and in-paint humans in a given video.")
-    parser.add_argument("--input_path", "-i", type=str, required=True, help="Path to the input video file")
+    parser.add_argument("--input-dir", "-i", type=str, required=True, help="Path to directory containing input videos.")
+    parser.add_argument("--output-dir", "-o", type=str, required=True, help="Path to directory to save output videos.")
     parser.add_argument("--inpaint", "-p", type=str, choices=["e2fgvi", "ns"], default="e2fgvi", help="Inpainting method")
     parser.add_argument("--resize", "-r", type=int, nargs=2, help="Resize the video to the given width and height")
 

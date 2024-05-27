@@ -30,5 +30,5 @@ gdown https://drive.google.com/uc?id=10wGdKSUOie0XmCr8SQ2A2FeDe-mfn5w3 -O human-
 From the root directory, execute the following Docker commands to first build, and then launch the container.
 ```shell
 docker build -t ppsmpl-hm -f hm.dockerfile .
-docker run --gpus all -v $(pwd)/human-masking/ckpt:/app/ckpt -it ppsmpl-hm -i <input-video-path>.mp4 -p e2fgvi
+docker run --gpus all -v $(pwd)/human-masking/ckpt:/app/ckpt -v $(pwd)/<INPUT_DIR>:/app/<INPUT_DIR> -v $(pwd)/<INPUT_DIR>-hm:/app/<INPUT_DIR>-hm -it ppsmpl-hm -i <INPUT_DIR> -o <INPUT_DIR>-hm -r 432 240
 ```

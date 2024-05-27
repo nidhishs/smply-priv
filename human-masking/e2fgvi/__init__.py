@@ -18,23 +18,31 @@ _STEPS = 10
 _NEIGHBOR_STRIDE = 5
 
 
+def setup_e2fgvi(ckpt_path, device="cuda"):
+    model = InpaintGenerator().to(device)
+    model.load_state_dict(torch.load(ckpt_path, map_location=device))
+    model.eval()
+
+    return model
+
+
 @torch.no_grad()
 def run_e2fgvi(
+    model, 
     frames,
     masks,
-    ckpt_path,
     neighbor_stride=_NEIGHBOR_STRIDE,
     steps=_STEPS,
-    device="cuda",
+    device='cuda',
     progress=False,
 ):
     """
     Runs the E2FGVI in-painting model on the given frames and masks.
 
     Args:
+        model (nn.Module or str): The E2FGVI model to use. If str, it should be the path to a checkpoint.
         frames (List[np.ndarray]): A list of frames to in-paint.
         masks (List[np.ndarray]): A list of masks corresponding to the frames.
-        ckpt_path (str): The path to the E2FGVI model checkpoint.
         neighbor_stride (int): The number of frames to skip between neighbors.
         steps (int): The number of frames to skip between reference frames.
         device (str): The device to run the model on.
@@ -43,7 +51,8 @@ def run_e2fgvi(
     Returns:
         List[np.ndarray]: The in-painted frames.
     """
-    model = _setup_model(ckpt_path, device=device)
+    if isinstance(model, str):
+        model = setup_e2fgvi(model, device)
 
     (height, width), num_frames = frames[0].shape[:2], len(frames)
     binary_masks = [np.expand_dims(m != 0, 2).astype(np.uint8) for m in masks]
@@ -118,11 +127,3 @@ def _update_composite_frames(
                 + img.astype(np.float32) * 0.5
             )
     return composite_frames
-
-
-def _setup_model(ckpt_path, device="cuda"):
-    model = InpaintGenerator().to(device)
-    model.load_state_dict(torch.load(ckpt_path, map_location=device))
-    model.eval()
-
-    return model
