@@ -19,8 +19,17 @@ from tqdm import tqdm
 MASKING_MODEL = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
 E2FGVI_MODEL = "ckpt/E2FGVI-HQ-CVPR22.pth"
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+os.makedirs('logs', exist_ok=True)
+log_format = "%(asctime)s [ %(levelname)8s ] %(message)s"
+logger = logging.getLogger('run-hm')
+logger.setLevel(logging.INFO)
+fh = logging.FileHandler(os.path.join('logs', f"run-hm-{int(time.time())}.log"))
+ch = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter(log_format)
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 def setup_model(config_path):
     cfg = get_cfg()
@@ -74,6 +83,50 @@ def get_masks(predictor, frames, progress=False):
         masks.append(dilated_mask)
     return masks
 
+def process_video(masking_model, video_path, input_dir, output_dir, inpaint_method=None, inpaint_model=None, resize=False):
+    frames = read_frames(video_path, args.resize)
+    if resize:
+        resized_path = os.path.join(
+            output_dir, 'resized', os.path.relpath(video_path, input_dir)
+        )
+        os.makedirs(os.path.dirname(resized_path), exist_ok=True)
+        save_frames(frames, resized_path)
+        logger.info("Saved resized video to: %s", resized_path)
+        
+    logger.info("Getting human masks...")
+    masks = get_masks(masking_model, frames, progress=True)
+    mask_path = os.path.join(
+        output_dir, 'masks',
+        os.path.relpath(video_path, input_dir).replace(".mp4", "_masks.mp4")
+    )
+    os.makedirs(os.path.dirname(mask_path), exist_ok=True)
+    save_frames(masks, mask_path)
+    logger.info("Saved masks video to: %s", mask_path)
+    
+    if not inpaint_method:
+        return
+    
+    logger.info("Inpainting...")
+    if inpaint_method == "e2fgvi":
+        assert inpaint_model is not None, "E2FGVI model not loaded"
+        inpainted_frames = run_e2fgvi(
+            inpaint_model, frames, masks, progress=True
+        )
+    elif inpaint_method == "ns":
+        inpainted_frames = []
+        for frame, mask in zip(frames, masks):
+            inpainted_frame = cv2.inpaint(frame, mask, 3, cv2.INPAINT_NS)
+            inpainted_frames.append(inpainted_frame)
+
+    assert inpainted_frames, "No inpainted frames found"
+    inpaint_path = os.path.join(
+        output_dir, 'inpainted',
+        os.path.relpath(video_path, input_dir).replace(".mp4", f"_{inpaint_method}.mp4")
+    )
+    os.makedirs(os.path.dirname(inpaint_path), exist_ok=True)
+    save_frames(inpainted_frames, inpaint_path)
+    logger.info("Saved inpainted video to: %s", inpaint_path)
+
 
 def main(args):
     video_paths = glob.glob(os.path.join(args.input_dir, "**/*.mp4"), recursive=True)
@@ -92,49 +145,11 @@ def main(args):
     tic = time.time()
     for i, video_path in enumerate(video_paths):
         logger.info("Processing video (%d/%d): %s", i + 1, len(video_paths), video_path)
-
-        frames = read_frames(video_path, args.resize)
-        if args.resize:
-            resized_path = os.path.join(
-                args.output_dir, 'resized', os.path.relpath(video_path, args.input_dir)
-            )
-            os.makedirs(os.path.dirname(resized_path), exist_ok=True)
-            save_frames(frames, resized_path)
-            logger.info("Saved resized video to: %s", resized_path)
-
-        logger.info("Getting human masks...")
-        masks = get_masks(masking_model, frames, progress=True)
-        mask_path = os.path.join(
-            args.output_dir, 'masks',
-            os.path.relpath(video_path, args.input_dir).replace(".mp4", "_masks.mp4")
-        )
-        os.makedirs(os.path.dirname(mask_path), exist_ok=True)
-        save_frames(masks, mask_path)
-        logger.info("Saved masks video to: %s", mask_path)
-
-        if not args.inpaint:
-            continue
-        
-        logger.info("Inpainting...")
-        if args.inpaint == "e2fgvi":
-            assert inpaint_model is not None, "E2FGVI model not loaded"
-            inpainted_frames = run_e2fgvi(
-                inpaint_model, frames, masks, progress=True
-            )
-        elif args.inpaint == "ns":
-            inpainted_frames = []
-            for frame, mask in zip(frames, masks):
-                inpainted_frame = cv2.inpaint(frame, mask, 3, cv2.INPAINT_NS)
-                inpainted_frames.append(inpainted_frame)
-
-        assert inpainted_frames, "No inpainted frames found"
-        inpaint_path = os.path.join(
-            args.output_dir, 'inpainted',
-            os.path.relpath(video_path, args.input_dir).replace(".mp4", f"_{args.inpaint}.mp4")
-        )
-        os.makedirs(os.path.dirname(inpaint_path), exist_ok=True)
-        save_frames(inpainted_frames, inpaint_path)
-        logger.info("Saved inpainted video to: %s", inpaint_path)
+        try:
+            process_video(masking_model, video_path, args.input_dir, args.output_dir, args.inpaint, inpaint_model, args.resize)
+        except Exception as e:
+            logger.error("Error processing video: %s", str(e))
+            
     toc = time.time()
 
     h, m, s = int(toc - tic) // 3600, int(toc - tic) // 60, int(toc - tic) % 60
