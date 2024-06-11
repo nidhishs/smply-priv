@@ -1,0 +1,5 @@
+transformers[torch]==4.39.0
+accelerate==0.27.2
+datasets==2.19.0
+opencv-python==4.9.0.80
+imageio[ffmpeg]==2.34.1

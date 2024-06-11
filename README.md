@@ -71,7 +71,7 @@ python run_osx.py -i /path/to/original_video.mp4 -p /path/to/inpainted_video.mp4
 We use, for pre-training, a VideoMAE model and evaluate its performance on various downstream video action recognition datasets, such as UCF101, HMDB51, Mini-SSV2, Diving48, IkeaFA, and UAV-Human.
 
 #### Data
-Before running any training-based scripts, ensure you have downloaded the relevant datasets for downstream evaluation from the following table. We provide the exact splits used for training in [`training/data`](/training/data). Please refer to our [datasheet](/training/dfd.md) for more details.
+Before running any training-based scripts, ensure you have downloaded the relevant datasets for downstream evaluation from the following table. We provide the exact splits used for training in [`training/data`](/training/data). Please refer to our [datasheet](/training/data/dfd.md) for more details.
 
 | Downstream Data | Download Link |
 |--------------------|-----------------------|
@@ -111,7 +111,7 @@ Furthermore, you will need to preprocess the data such that the splits are as fo
 You can install the required dependencies using pip:
 
 ```
-transformers[torch]==4.39.0
+transformers==4.39.0
 accelerate==0.27.2
 datasets==2.19.0
 opencv-python==4.9.0.80
