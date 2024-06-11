@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.cuda.amp import autocast
 from torchvision import transforms
 from tqdm import tqdm
 
@@ -104,6 +105,7 @@ def _get_padded_frames(frames, h, w, mod_size_h=60, mod_size_w=108):
     return padded_frames
 
 
+@autocast()
 def _get_predicted_frames(model, frames, num_neighbors, h, w):
     predicted_frames, _ = model(frames, num_neighbors)
     predicted_frames = predicted_frames[:, :, :h, :w]

@@ -1,6 +1,6 @@
 FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-devel
 
-COPY human-masking/requirements.txt /tmp/requirements.txt
+COPY requirements.txt /tmp/requirements.txt
 
 # Install mmcv before opencv-python-headless to avoid conflict with opencv-python.
 RUN pip install --no-cache-dir \
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y git && \
     pip install --no-cache-dir -r /tmp/requirements.txt && \
     rm -rf /var/lib/apt/lists/*
 
-COPY human-masking /app
+COPY . /app
 
 WORKDIR /app
 

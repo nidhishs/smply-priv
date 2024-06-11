@@ -1,34 +1,23 @@
 # pp-smpl
 
-### HybrIK
-Install the required model-files from Google Drive. Ensure the model-files are available at `hybrik/pretrained_models/*.pth` and `hybrik/model_files/*`. 
-```shell
-pip install gdown
-
-mkdir -p hybrik/pretrained_models
-mkdir -p hybrik/model_files
-
-gdown https://drive.google.com/uc?id=1un9yAGlGjDooPwlnwFpJrbGHRiLaBNzV
-gdown https://drive.google.com/uc?id=1R0WbySXs_vceygKg_oWeLMNAZCEoCadG -O hybrik/pretrained_models/hybrikx_rle_hrnet.pth
-unzip model_files.zip -d hybrik
-```
-
-From the root directory, execute the following Docker commands to first build, and then launch the container.
-```shell
-docker build -t ppsmpl-hybrik -f hybrik.dockerfile .
-docker run --gpus all -v $(pwd)/hybrik/pretrained_models:/app/pretrained_models -v $(pwd)/hybrik/model_files:/app/model_files -v $(pwd)/hybrik/output:/app/output -it ppsmpl-hybrik --video-name <path-to-video-file>.mp4 --out-dir output --save-pk --save-img
-```
-
-### Human Masking & In-painting
-We use Detectron2 for masking humans in videos and support E^2FGVI as well as OpenCV's Navier-Stokes for in-painting. Ensure the E^2FGVI model-files are available `human-masking/ckpt/*.pth`.
+### Human Masking & Inpainting
+We use Detectron2 for masking humans in videos and E^2FGVI for inpainting. Ensure the E^2FGVI model-files are available at `human-masking/ckpt/*.pth`.
 ```shell
 pip install gdown
 
 mkdir -p human-masking/ckpt
 gdown https://drive.google.com/uc?id=10wGdKSUOie0XmCr8SQ2A2FeDe-mfn5w3 -O human-masking/ckpt/E2FGVI-HQ-CVPR22.pth
 ```
-From the root directory, execute the following Docker commands to first build, and then launch the container.
+From the `human-masking` directory, execute the following Docker commands to first build, and then launch the container.
 ```shell
-docker build -t ppsmpl-hm -f hm.dockerfile .
-docker run --gpus all -v $(pwd)/human-masking/ckpt:/app/ckpt -v $(pwd)/output:/app/outut -it ppsmpl-hm -v INPUT_PATH
+docker build -t ppsmpl-hm .
+docker run --gpus all -v $(pwd)/ckpt:/app/ckpt -v $(pwd)/output:/app/output -it ppsmpl-hm -v INPUT_PATH
+```
+
+### Body Mesh Recovery.
+We depend on the OSX codebase for body mesh recovery. Please follow the instructions in the [`OSX/README.md`](https://github.com/IDEA-Research/OSX/blob/main/README.md) to setup the OSX codebase. We provide a pinned version of the dependencies in [`mesh-recovery/requirements.txt`](mesh-recovery/requirements.txt) to help installation.
+
+The file [`mesh-recovery/run_osx.py`](mesh-recovery/run_osx.py) can be copied to [`OSX/demo/run_osx.py`](https://github.com/IDEA-Research/OSX/tree/main/demo) to recover the body mesh from the original video, and then overlay it on the inpainted video.
+```shell
+python3 run_osx.py -i INPUT_VIDEO -p INPAINT_VIDEO
 ```

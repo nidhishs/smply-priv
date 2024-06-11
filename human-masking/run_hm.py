@@ -75,6 +75,14 @@ def main(args):
     logger.info("Reading frames from: %s, resizing: %s", args.video, args.resize)
     frames = read_frames(args.video, args.resize)
 
+    os.makedirs(args.output_dir, exist_ok=True)
+    file_name = os.path.splitext(os.path.basename(args.video))[0]
+
+    if args.resize:
+        resize_path = os.path.join(args.output_dir, f"{file_name}_resize.mp4")
+        save_frames(frames, resize_path)
+        logger.info("Saved resized video to: %s", resize_path)
+
     logger.info("Setting up human masking model: %s", MASKING_MODEL)
     masking_model = setup_model(MASKING_MODEL)
     logger.info("Setting up inpainting model: %s", E2FGVI_MODEL)
@@ -94,8 +102,6 @@ def main(args):
         logger.error("Failed to inpaint: %s", e)
         return
     
-    os.makedirs(args.output_dir, exist_ok=True)
-    file_name = os.path.splitext(os.path.basename(args.video))[0]
     inpaint_path = os.path.join(args.output_dir, f"{file_name}_inpaint.mp4")
     save_frames(inpainted_frames, inpaint_path)
     logger.info("Saved inpainted video to: %s", inpaint_path)
@@ -105,7 +111,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Mask and in-paint humans in a given video.")
     parser.add_argument("--video", "-v", type=str, required=True, help="Path to the input video file")
-    parser.add_argument("--output-dir", "-o", type=str, default="output" help="Output directory to save the inpainted video")
+    parser.add_argument("--output-dir", "-o", type=str, default="output", help="Output directory to save the inpainted video")
     parser.add_argument("--resize", "-r", type=int, nargs=2, help="Resize the video to the given width and height")
 
     args = parser.parse_args()
