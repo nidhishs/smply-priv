@@ -1,8 +1,7 @@
-### ...see `k-nexus-demo.ipynb` for demo... ###
-
 import argparse
 import numpy as np
 import pandas as pd
+import json
 from typing import Dict, Tuple, List
 
 def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
@@ -128,11 +127,25 @@ def main(args) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Perform clustering on embeddings and select representative classes.")
-    parser.add_argument('--embeddings', type=Dict[str, np.ndarray], help='Class average emeddings (E-bar)')
-    parser.add_argument('--sample_counts', type=Dict[str, int], help='Number of samples per class')
+    parser.add_argument('--path', type=str, required=True, help='Path to JSON file containing class average embeddings (E-bar) and sample counts.')
     parser.add_argument('--num_clusters', type=int, default=150, help='Number of clusters')
 
     args = parser.parse_args()
+    
+    # Load embeddings and sample counts from JSON file
+    # The JSON file should have the following format:
+    # {
+    #     "class1": {
+    #         "embeddings": [0.1, 0.2, 0.3, ...],
+    #         "sample_count": 100
+    #     },
+    #     ...
+    # }
+    with open(args.path, 'r') as f:
+        data = json.load(f)
+    args.embeddings = {key: np.array(value['embeddings']) for key, value in data.items()}
+    args.sample_counts = {key: value['sample_count'] for key, value in data.items()}
 
-    # Run the main function
     cluster_results_df_sorted, representative_classes = main(args)
+    cluster_results_df_sorted.to_csv('cluster_results.csv', index=False)
+    representative_classes.to_csv('representative_classes.csv', index=False)

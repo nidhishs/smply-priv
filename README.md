@@ -57,9 +57,7 @@ docker run --gpus all -v $(pwd)/ckpt:/app/ckpt -v $(pwd)/output:/app/output -it 
 We use the [OSX](https://github.com/IDEA-Research/OSX) algorithm for body mesh recovery. Please refer to their [paper](http://arxiv.org/abs/2303.16160) for more details.
 
 #### Installation
-We depend on the OSX codebase for body mesh recovery. Please follow the instructions in [`OSX/README.md`](https://github.com/IDEA-Research/OSX/blob/main/README.md) to setup the OSX codebase. We provide a pinned version of the dependencies in [`mesh-recovery/requirements.txt`](mesh-recovery/requirements.txt) to help installation.
-
-Post installation, our script, [`mesh-recovery/run_osx.py`](mesh-recovery/run_osx.py) can be copied to [`OSX/demo/run_osx.py`](https://github.com/IDEA-Research/OSX/tree/main/demo).
+Please follow the instructions in [`OSX/README.md`](https://github.com/IDEA-Research/OSX/blob/main/README.md) to setup the OSX codebase. We provide a pinned version of the dependencies in [`mesh-recovery/requirements.txt`](mesh-recovery/requirements.txt) to help installation. Post installation, our script, [`mesh-recovery/run_osx.py`](mesh-recovery/run_osx.py) can be copied to [`OSX/demo/run_osx.py`](https://github.com/IDEA-Research/OSX/tree/main/demo).
 
 #### Usage
 Ensure that you first run the human-masking and inpainting on the original video to obtain the inpainted video. The body mesh recovery algorithm can then be run to recover the body mesh from the original video, and then overlay it on the inpainted video using the following command:
