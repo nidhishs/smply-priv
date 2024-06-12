@@ -3,7 +3,7 @@
 ### Overview
 ![Teaser Image](/assets/tennis.gif)
 
-> In this paper, we introduce *Mask2Mesh* (M2M), a new framework that preserves privacy in action recognition by replacing real humans in videos with 3D meshes using the SMPL-X model. This method maintains the quality of human movement and expression details necessary for accurate recognition, unlike traditional privacy methods that degrade data quality. Empirical results demonstrate that our approach achieves performance within $0.5%$ of models trained on real video data.
+> In this paper, we introduce *Mask2Mesh* (M2M), a new framework that preserves privacy in action recognition by replacing real humans in videos with 3D meshes using the SMPL-X model. This method maintains the quality of human movement and expression details necessary for accurate recognition, unlike traditional privacy methods that degrade data quality. Empirical results demonstrate that our approach achieves performance within 0.5% of models trained on real video data.
 
 ![Overview of M2M](/assets/smply-p.png)
 
