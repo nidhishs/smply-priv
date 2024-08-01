@@ -1,5 +1,7 @@
 # SMPLy Private: From Mask to Meshes in Action Recognition
 
+Read the manuscript: [SMPLy Private](assets/SMPLy_Private.pdf)
+
 ### Overview
 ![Teaser Image](/assets/tennis.gif)
 
